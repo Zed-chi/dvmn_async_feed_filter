@@ -18,9 +18,17 @@ TEST_ARTICLES = [
     "https://inosmi.ru/science/20210817/250323544.html",
 ]
 
+class Result:
+    def __init__(self, address, words_count, pos_rate, neg_rate):
+        self.address = address
+        self.words_count = words_count
+        self.pos_rate = pos_rate
+        self.neg_rate = neg_rate
+
+        
 async def process_article(
     session, morph, url,
-    positive_words, negative_words
+    positive_words, negative_words, results_container
 ):
     html = await fetch(
         session, url
@@ -29,10 +37,9 @@ async def process_article(
     words = split_by_words(morph, text)
     positive_rate = calculate_jaundice_rate(words, positive_words)
     negative_rate = calculate_jaundice_rate(words, negative_words)
-    print('Address:', url)        
-    print(f"\twords {len(words)}")
-    print(f"\t+rate {positive_rate}")
-    print(f"\t-rate {negative_rate}")        
+    result = Result(url, len(words), positive_rate, negative_rate)
+    results_container.append(result)
+    
             
 def get_words_from_file(path):
     with open(path, "r", encoding="utf-8") as file:
@@ -50,14 +57,21 @@ async def main():
     positive_words = get_words_from_file(POSITIVE_PATH)
     negative_words = get_words_from_file(NEGATIVE_PATH)
     
+    results = []
+    
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:        
             for url in TEST_ARTICLES:                    
                 tg.start_soon(
                     process_article, session, morph,
-                    url, positive_words, negative_words
+                    url, positive_words, negative_words,results
                 )
     
+    for i in results:
+        print(f"Address {i.address}")
+        print(f"\twords count {i.words_count}")
+        print(f"\t+rate {i.pos_rate}")
+        print(f"\t-rate {i.neg_rate}")
 
 
 #asyncio.run(main())
