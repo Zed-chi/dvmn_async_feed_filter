@@ -15,7 +15,7 @@ TEST_ARTICLES = [
     "https://inosmi.ru/science/20210820/250344124.html",
     "https://inosmi.ru/science/20210819/250338925.html",
     "https://inosmi.ru/science/20210817/250325101.html",
-    "https://inosmi.ru/science/20210817/250323544.html",
+    "https://inosmi.ru/science/20210817/250323544pio.html",
 ]
 
 class Result:
@@ -30,16 +30,25 @@ async def process_article(
     session, morph, url,
     positive_words, negative_words, results_container
 ):
-    html = await fetch(
-        session, url
-    )
-    text = sanitize(html, True)
-    words = split_by_words(morph, text)
-    positive_rate = calculate_jaundice_rate(words, positive_words)
-    negative_rate = calculate_jaundice_rate(words, negative_words)
-    result = Result(url, len(words), positive_rate, negative_rate)
-    results_container.append(result)
-    
+    address = "Not Loaded"
+    word_count = 0
+    positive_rate = None
+    negative_rate = None
+    try:
+        html = await fetch(
+            session, url
+        )
+        text = sanitize(html, True)
+        words = split_by_words(morph, text)
+        positive_rate = calculate_jaundice_rate(words, positive_words)
+        negative_rate = calculate_jaundice_rate(words, negative_words)
+        address = url
+        word_count = len(words)
+    except:
+        pass
+    finally:
+        result = Result(address, word_count, positive_rate, negative_rate)
+        results_container.append(result)
             
 def get_words_from_file(path):
     with open(path, "r", encoding="utf-8") as file:
