@@ -6,6 +6,8 @@ import pymorphy2
 from adapters.inosmi_ru import sanitize
 from text_tools import calculate_jaundice_rate, split_by_words
 from anyio import sleep, create_task_group, run
+from enum import Enum
+
 
 
 NEGATIVE_PATH = "./charged_dict/negative_words.txt"
@@ -18,12 +20,18 @@ TEST_ARTICLES = [
     "https://inosmi.ru/science/20210817/250323544pio.html",
 ]
 
+class ProcessingStatus(Enum):
+    OK = 'OK'
+    FETCH_ERROR = 'FETCH_ERROR'
+    PARSING_ERROR = "PARSING_ERROR"
+
 class Result:
-    def __init__(self, address, words_count, pos_rate, neg_rate):
+    def __init__(self, address, words_count, pos_rate, neg_rate, status):
         self.address = address
         self.words_count = words_count
         self.pos_rate = pos_rate
         self.neg_rate = neg_rate
+        self.status = status
 
         
 async def process_article(
@@ -34,6 +42,7 @@ async def process_article(
     word_count = 0
     positive_rate = None
     negative_rate = None
+    status = None
     try:
         html = await fetch(
             session, url
@@ -44,10 +53,14 @@ async def process_article(
         negative_rate = calculate_jaundice_rate(words, negative_words)
         address = url
         word_count = len(words)
-    except:
-        pass
+        status = ProcessingStatus.OK.value
+    except aiohttp.client_exceptions.ClientResponseError:
+        status = ProcessingStatus.FETCH_ERROR.value
+    except adapters.ArticleNotFound:
+        status = ProcessingStatus.PARSING_ERROR.value
+        
     finally:
-        result = Result(address, word_count, positive_rate, negative_rate)
+        result = Result(address, word_count, positive_rate, negative_rate, status)
         results_container.append(result)
             
 def get_words_from_file(path):
@@ -78,6 +91,7 @@ async def main():
     
     for i in results:
         print(f"Address {i.address}")
+        print(f"\tstatus {i.status}")
         print(f"\twords count {i.words_count}")
         print(f"\t+rate {i.pos_rate}")
         print(f"\t-rate {i.neg_rate}")
