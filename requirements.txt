@@ -8,3 +8,4 @@ pymorphy2==0.8
 pymorphy2-dicts==2.*
 DAWG-Python==0.7.*
 pytest-aiohttp==0.3.0 
+anyio==3.0.1
