@@ -1,18 +1,17 @@
 import asyncio
 import logging
-from datetime import datetime
 from enum import Enum
 from time import monotonic
 
 import aiohttp
 import pymorphy2
-from anyio import create_task_group, run, sleep
+from aiohttp.client_exceptions import ClientConnectorError, ClientResponseError
+from anyio import create_task_group, run
 from async_timeout import timeout
 
 from adapters import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import calculate_jaundice_rate, split_by_words
-
 
 logging.basicConfig(level=logging.INFO)
 PROCESS_TIME = 3
@@ -35,7 +34,15 @@ class ProcessingStatus(Enum):
 
 
 class Result:
-    def __init__(self, address, words_count, pos_rate, neg_rate, status, time=0):
+    def __init__(
+        self,
+        address,
+        words_count,
+        pos_rate,
+        neg_rate,
+        status,
+        time=0,
+    ):
         self.address = address
         self.words_count = words_count
         self.pos_rate = pos_rate
@@ -45,15 +52,21 @@ class Result:
 
 
 async def process_article(
-    session, morph, url, positive_words, negative_words, results_container
-):    
+    session,
+    morph,
+    url,
+    positive_words,
+    negative_words,
+    results_container,
+    process_timeout=PROCESS_TIME,
+):
     word_count = 0
     positive_rate = None
     negative_rate = None
     status = None
     process_time = 0
     try:
-        async with timeout(PROCESS_TIME):
+        async with timeout(process_timeout):
             start = monotonic()
             html = await fetch(session, url)
             text = sanitize(html, True)
@@ -61,10 +74,10 @@ async def process_article(
             positive_rate = calculate_jaundice_rate(words, positive_words)
             negative_rate = calculate_jaundice_rate(words, negative_words)
             word_count = len(words)
-            status = ProcessingStatus.OK.value            
+            status = ProcessingStatus.OK.value
             end_time = monotonic()
             process_time = round((end_time - start), 2)
-    except aiohttp.client_exceptions.ClientResponseError:
+    except (ClientResponseError, ClientConnectorError):
         status = ProcessingStatus.FETCH_ERROR.value
     except ArticleNotFound:
         status = ProcessingStatus.PARSING_ERROR.value
@@ -72,7 +85,12 @@ async def process_article(
         status = ProcessingStatus.TIMEOUT.value
     finally:
         result = Result(
-            url, word_count, positive_rate, negative_rate, status, process_time
+            url,
+            word_count,
+            positive_rate,
+            negative_rate,
+            status,
+            process_time,
         )
         results_container.append(result)
 
@@ -88,7 +106,7 @@ async def fetch(session, url):
         return await response.text()
 
 
-async def main(urls=None):   
+async def main(urls=None):
     morph = pymorphy2.MorphAnalyzer()
     positive_words = get_words_from_file(POSITIVE_PATH)
     negative_words = get_words_from_file(NEGATIVE_PATH)
@@ -117,7 +135,7 @@ async def main(urls=None):
         print(f"\ttime {i.time}")
 
 
-async def get_articles_results(urls=None):   
+async def get_articles_results(urls=None, process_timeout=PROCESS_TIME):
     morph = pymorphy2.MorphAnalyzer()
     positive_words = get_words_from_file(POSITIVE_PATH)
     negative_words = get_words_from_file(NEGATIVE_PATH)
@@ -135,6 +153,7 @@ async def get_articles_results(urls=None):
                     positive_words,
                     negative_words,
                     results,
+                    process_timeout,
                 )
     return results
 
