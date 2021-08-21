@@ -126,13 +126,13 @@ async def main(urls=None):
                     results,
                 )
 
-    for i in results:
-        print(f"Address {i.address}")
-        print(f"\tstatus {i.status}")
-        print(f"\twords count {i.words_count}")
-        print(f"\t+rate {i.pos_rate}")
-        print(f"\t-rate {i.neg_rate}")
-        print(f"\ttime {i.time}")
+    for result in results:
+        print(f"Address {result.address}")
+        print(f"\tstatus {result.status}")
+        print(f"\twords count {result.words_count}")
+        print(f"\t+rate {result.pos_rate}")
+        print(f"\t-rate {result.neg_rate}")
+        print(f"\ttime {result.time}")
 
 
 async def get_articles_results(urls=None, process_timeout=PROCESS_TIME):
