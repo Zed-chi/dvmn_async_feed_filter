@@ -48,7 +48,7 @@ async def test_empty_url(cli):
     resp = await cli.get("/")
     assert resp.status == 200
     result = await resp.json()
-    assert result == {"results": []}
+    assert result == {"error":"Empty url parameter"}
 
 
 async def test_invalid_url(cli):
@@ -78,7 +78,6 @@ async def test_timing_error(cli):
     )
     assert resp.status == 200
     result = await resp.json()
-    print(result["results"][0]["status"])
     assert result["results"][0]["status"] == "TIMEOUT"
 
 
