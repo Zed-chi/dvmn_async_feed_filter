@@ -4,8 +4,25 @@ import pymorphy2
 
 
 def _clean_word(word):
-    word = word.replace("«", "").replace("»", "").replace("…", "")
-    # FIXME какие еще знаки пунктуации часто встречаются ?
+    for ch in [
+        "«",
+        "»",
+        ".",
+        ",",
+        " - ",
+        "!",
+        "?",
+        "(",
+        ")",
+        "[",
+        "]",
+        '"',
+        "'",
+        ":",
+        ";",
+        "...",
+    ]:
+        word = word.replace(ch, "")
     word = word.strip(string.punctuation)
     return word
 
