@@ -14,6 +14,7 @@ from text_tools import calculate_jaundice_rate, split_by_words
 
 
 logging.basicConfig(level=logging.INFO)
+PROCESS_TIME = 3
 NEGATIVE_PATH = "./charged_dict/negative_words.txt"
 POSITIVE_PATH = "./charged_dict/positive_words.txt"
 TEST_ARTICLES = [
@@ -52,7 +53,7 @@ async def process_article(
     status = None
     time = 0
     try:
-        async with timeout(5):
+        async with timeout(PROCESS_TIME):
             start = datetime.now()
             html = await fetch(session, url)
             text = sanitize(html, True)
