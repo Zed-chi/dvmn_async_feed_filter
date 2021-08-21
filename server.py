@@ -1,5 +1,6 @@
 import pytest
 from aiohttp import web
+
 from main import get_articles_results
 
 TIMEOUT = 8
@@ -10,11 +11,12 @@ routes = web.RouteTableDef()
 async def process_articles(request):
     urls_line = request.rel_url.query.get("urls", None)
     if not urls_line:
-        return web.json_response({"results": []})
+        return web.json_response({"error":"Empty url parameter"})
+    
     urls = urls_line.split(",")
     if len(urls) > 10:
         return web.json_response(
-            {"error": "too many urls in request, should be 10 or less"},
+            {"error": "too many urls in request, should be 10 or less"}
         )
 
     results = await get_articles_results(urls, process_timeout=TIMEOUT)
