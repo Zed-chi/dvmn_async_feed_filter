@@ -4,9 +4,11 @@ import aiohttp
 import pymorphy2
 
 from adapters.inosmi_ru import sanitize
+from adapters import ArticleNotFound
 from text_tools import calculate_jaundice_rate, split_by_words
 from anyio import sleep, create_task_group, run
 from enum import Enum
+from async_timeout import timeout
 
 
 
@@ -24,6 +26,7 @@ class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
     PARSING_ERROR = "PARSING_ERROR"
+    TIMEOUT = "TIMEOUT"
 
 class Result:
     def __init__(self, address, words_count, pos_rate, neg_rate, status):
@@ -44,21 +47,23 @@ async def process_article(
     negative_rate = None
     status = None
     try:
-        html = await fetch(
-            session, url
-        )
-        text = sanitize(html, True)
-        words = split_by_words(morph, text)
-        positive_rate = calculate_jaundice_rate(words, positive_words)
-        negative_rate = calculate_jaundice_rate(words, negative_words)
-        address = url
-        word_count = len(words)
-        status = ProcessingStatus.OK.value
+        async with timeout(5):        
+            html = await fetch(
+                session, url
+            )
+            text = sanitize(html, True)
+            words = split_by_words(morph, text)
+            positive_rate = calculate_jaundice_rate(words, positive_words)
+            negative_rate = calculate_jaundice_rate(words, negative_words)
+            address = url
+            word_count = len(words)
+            status = ProcessingStatus.OK.value
     except aiohttp.client_exceptions.ClientResponseError:
         status = ProcessingStatus.FETCH_ERROR.value
-    except adapters.ArticleNotFound:
+    except ArticleNotFound:
         status = ProcessingStatus.PARSING_ERROR.value
-        
+    except asyncio.TimeoutError:
+        status = ProcessingStatus.TIMEOUT.value
     finally:
         result = Result(address, word_count, positive_rate, negative_rate, status)
         results_container.append(result)
