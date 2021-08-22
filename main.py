@@ -8,14 +8,14 @@ from config import (DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH,
                     TEST_ARTICLES)
 
 
-async def main(urls=None):
+async def main(urls):
     start_time = monotonic()
     morph = pymorphy2.MorphAnalyzer()
     positive_words = load_words_from_file(POSITIVE_WORDS_PATH)
     negative_words = load_words_from_file(NEGATIVE_WORDS_PATH)
 
     results = await get_articles_results(
-        morph, positive_words, negative_words, TEST_ARTICLES, DEFAULT_TIMEOUT
+        morph, positive_words, negative_words, urls, DEFAULT_TIMEOUT
     )
 
     end_time = monotonic()
