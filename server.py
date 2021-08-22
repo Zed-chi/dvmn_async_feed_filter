@@ -1,12 +1,16 @@
 from typing import List
 
+import pymorphy2
 import pytest
 from aiohttp import web
 
-from main import Result, get_articles_results
+from article_analyzer import Result, get_articles_results, load_words_from_file
+from config import DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH
 
-DEFAULT_TIMEOUT = 8
 routes = web.RouteTableDef()
+MORPH = pymorphy2.MorphAnalyzer()
+POSITIVE_WORDS = load_words_from_file(POSITIVE_WORDS_PATH)
+NEGATIVE_WORDS = load_words_from_file(NEGATIVE_WORDS_PATH)
 
 
 @routes.get("/")
@@ -22,7 +26,7 @@ async def process_articles(request):
         )
 
     results: List[Result] = await get_articles_results(
-        urls, process_timeout=DEFAULT_TIMEOUT
+        MORPH, POSITIVE_WORDS, NEGATIVE_WORDS, urls, DEFAULT_TIMEOUT
     )
     result_dict = {
         "results": [result.__dict__ for result in results],
