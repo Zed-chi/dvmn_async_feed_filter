@@ -4,7 +4,7 @@ import pymorphy2
 
 
 def _clean_word(word):
-    for ch in [
+    for char in [
         "«",
         "»",
         ".",
@@ -22,7 +22,7 @@ def _clean_word(word):
         ";",
         "...",
     ]:
-        word = word.replace(ch, "")
+        word = word.replace(char, "")
     word = word.strip(string.punctuation)
     return word
 
