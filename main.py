@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from enum import Enum
 from time import monotonic
 
@@ -12,11 +11,14 @@ from async_timeout import timeout
 from adapters import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import calculate_jaundice_rate, split_by_words
+from dataclasses import dataclass
 
-logging.basicConfig(level=logging.INFO)
-PROCESS_TIME = 3
-NEGATIVE_PATH = "./charged_dict/negative_words.txt"
-POSITIVE_PATH = "./charged_dict/positive_words.txt"
+
+
+
+DEFAULT_PROCESS_TIME = 3
+NEGATIVE_WORDS_PATH = "./charged_dict/negative_words.txt"
+POSITIVE_WORDS_PATH = "./charged_dict/positive_words.txt"
 TEST_ARTICLES = [
     "https://inosmi.ru/science/20210821/250351807.html",
     "https://inosmi.ru/science/20210820/250344124.html",
@@ -33,22 +35,14 @@ class ProcessingStatus(Enum):
     TIMEOUT = "TIMEOUT"
 
 
+@dataclass
 class Result:
-    def __init__(
-        self,
-        address,
-        words_count,
-        pos_rate,
-        neg_rate,
-        status,
-        time=0,
-    ):
-        self.address = address
-        self.words_count = words_count
-        self.pos_rate = pos_rate
-        self.neg_rate = neg_rate
-        self.status = status
-        self.time = time
+    address:str
+    words_count:int
+    pos_rate:float
+    neg_rate:float
+    status:str
+    time:float = 0.0
 
 
 async def process_article(
@@ -58,7 +52,7 @@ async def process_article(
     positive_words,
     negative_words,
     results_container,
-    process_timeout=PROCESS_TIME,
+    process_timeout=DEFAULT_PROCESS_TIME,
 ):
     word_count = 0
     positive_rate = None
@@ -67,7 +61,7 @@ async def process_article(
     process_time = 0
     try:
         async with timeout(process_timeout):
-            start = monotonic()
+            start_time = monotonic()
             html = await fetch(session, url)
             text = sanitize(html, True)
             words = split_by_words(morph, text)
@@ -76,7 +70,7 @@ async def process_article(
             word_count = len(words)
             status = ProcessingStatus.OK.value
             end_time = monotonic()
-            process_time = round((end_time - start), 2)
+            process_time = round((end_time - start_time), 2)
     except (ClientResponseError, ClientConnectorError):
         status = ProcessingStatus.FETCH_ERROR.value
     except ArticleNotFound:
@@ -108,8 +102,8 @@ async def fetch(session, url):
 
 async def main(urls=None):
     morph = pymorphy2.MorphAnalyzer()
-    positive_words = get_words_from_file(POSITIVE_PATH)
-    negative_words = get_words_from_file(NEGATIVE_PATH)
+    positive_words = get_words_from_file(POSITIVE_WORDS_PATH)
+    negative_words = get_words_from_file(NEGATIVE_WORDS_PATH)
 
     results = []
 
@@ -135,10 +129,10 @@ async def main(urls=None):
         print(f"\ttime {result.time}")
 
 
-async def get_articles_results(urls=None, process_timeout=PROCESS_TIME):
+async def get_articles_results(urls=None, process_timeout=DEFAULT_PROCESS_TIME):
     morph = pymorphy2.MorphAnalyzer()
-    positive_words = get_words_from_file(POSITIVE_PATH)
-    negative_words = get_words_from_file(NEGATIVE_PATH)
+    positive_words = get_words_from_file(POSITIVE_WORDS_PATH)
+    negative_words = get_words_from_file(NEGATIVE_WORDS_PATH)
 
     results = []
 
