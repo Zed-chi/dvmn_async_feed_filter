@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from enum import Enum
 from time import monotonic
 from typing import List
@@ -12,10 +13,6 @@ from async_timeout import timeout
 from adapters import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import calculate_jaundice_rate, split_by_words
-from dataclasses import dataclass
-
-
-
 
 DEFAULT_PROCESS_TIME = 3
 NEGATIVE_WORDS_PATH = "./charged_dict/negative_words.txt"
@@ -41,12 +38,12 @@ class ProcessingStatus(Enum):
 
 @dataclass
 class Result:
-    address:str
-    words_count:int
-    pos_rate:float
-    neg_rate:float
-    status:str
-    time:float = 0.0
+    address: str
+    words_count: int
+    pos_rate: float
+    neg_rate: float
+    status: str
+    time: float = 0.0
 
 
 async def process_article(
@@ -58,7 +55,7 @@ async def process_article(
     results_container,
     process_timeout=DEFAULT_PROCESS_TIME,
 ):
-    word_count = 0
+    words_count = 0
     positive_rate = None
     negative_rate = None
     status = None
@@ -71,7 +68,7 @@ async def process_article(
             words = split_by_words(morph, text)
             positive_rate = calculate_jaundice_rate(words, positive_words)
             negative_rate = calculate_jaundice_rate(words, negative_words)
-            word_count = len(words)
+            words_count = len(words)
             status = ProcessingStatus.OK.value
             end_time = monotonic()
             process_time = round((end_time - start_time), 2)
@@ -84,7 +81,7 @@ async def process_article(
     finally:
         result = Result(
             url,
-            word_count,
+            words_count,
             positive_rate,
             negative_rate,
             status,
@@ -93,8 +90,8 @@ async def process_article(
         results_container.append(result)
 
 
-def get_words_from_file(path):
-    with open(path, "r", encoding="utf-8") as file:
+def load_words_from_file(filepath):
+    with open(filepath, "r", encoding="utf-8") as file:
         return file.read().splitlines()
 
 
@@ -107,10 +104,10 @@ async def fetch(session, url):
 async def main(urls=None):
     start_time = monotonic()
     morph = pymorphy2.MorphAnalyzer()
-    positive_words = get_words_from_file(POSITIVE_WORDS_PATH)
-    negative_words = get_words_from_file(NEGATIVE_WORDS_PATH)
+    positive_words = load_words_from_file(POSITIVE_WORDS_PATH)
+    negative_words = load_words_from_file(NEGATIVE_WORDS_PATH)
 
-    results:List[Result] = []
+    results: List[Result] = []
 
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:
@@ -137,8 +134,8 @@ async def main(urls=None):
 
 async def get_articles_results(urls=None, process_timeout=DEFAULT_PROCESS_TIME):
     morph = pymorphy2.MorphAnalyzer()
-    positive_words = get_words_from_file(POSITIVE_WORDS_PATH)
-    negative_words = get_words_from_file(NEGATIVE_WORDS_PATH)
+    positive_words = load_words_from_file(POSITIVE_WORDS_PATH)
+    negative_words = load_words_from_file(NEGATIVE_WORDS_PATH)
 
     results = []
 

@@ -1,26 +1,29 @@
 from typing import List
+
 import pytest
 from aiohttp import web
 
 from main import Result, get_articles_results
 
-TIMEOUT = 8
+DEFAULT_TIMEOUT = 8
 routes = web.RouteTableDef()
 
 
 @routes.get("/")
 async def process_articles(request):
-    urls_line = request.rel_url.query.get("urls", None)
-    if not urls_line:
-        return web.json_response({"error":"Empty url parameter"})
-    
-    urls = urls_line.split(",")
+    urls_parameter = request.rel_url.query.get("urls", None)
+    if not urls_parameter:
+        return web.json_response({"error": "Empty url parameter"})
+
+    urls = urls_parameter.split(",")
     if len(urls) > 10:
         return web.json_response(
             {"error": "too many urls in request, should be 10 or less"}
         )
 
-    results:List[Result] = await get_articles_results(urls, process_timeout=TIMEOUT)
+    results: List[Result] = await get_articles_results(
+        urls, process_timeout=DEFAULT_TIMEOUT
+    )
     result_dict = {
         "results": [result.__dict__ for result in results],
     }
@@ -38,34 +41,28 @@ async def test_empty_url(cli):
     resp = await cli.get("/")
     assert resp.status == 200
     result = await resp.json()
-    assert result == {"error":"Empty url parameter"}
+    assert result == {"error": "Empty url parameter"}
 
 
 async def test_invalid_url(cli):
     """Testing invalid url and fetch error"""
-    resp = await cli.get(
-        "/?urls=https://inosmi.ru/sc6ience/20210821/250351807.html"
-    )
+    resp = await cli.get("/?urls=https://inosmi.ru/sc6ience/20210821/250351807.html")
     assert resp.status == 200
     result = await resp.json()
     assert result["results"][0]["status"] == "FETCH_ERROR"
 
 
 async def test_parse_error(cli):
-    resp = await cli.get(
-        "/?urls=https://ria.ru/20210821/arenda-1746671283.html"
-    )
+    resp = await cli.get("/?urls=https://ria.ru/20210821/arenda-1746671283.html")
     assert resp.status == 200
     result = await resp.json()
     assert result["results"][0]["status"] == "PARSING_ERROR"
 
 
 async def test_timing_error(cli):
-    global TIMEOUT
-    TIMEOUT = 0.3
-    resp = await cli.get(
-        "/?urls=https://inosmi.ru/science/20210821/250351807.html"
-    )
+    global DEFAULT_TIMEOUT
+    DEFAULT_TIMEOUT = 0.3
+    resp = await cli.get("/?urls=https://inosmi.ru/science/20210821/250351807.html")
     assert resp.status == 200
     result = await resp.json()
     assert result["results"][0]["status"] == "TIMEOUT"
