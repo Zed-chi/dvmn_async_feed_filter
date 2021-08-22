@@ -1,6 +1,7 @@
 import asyncio
 from enum import Enum
 from time import monotonic
+from typing import List
 
 import aiohttp
 import pymorphy2
@@ -25,6 +26,9 @@ TEST_ARTICLES = [
     "https://inosmi.ru/science/20210819/250338925.html",
     "https://inosmi.ru/science/20210817/250325101.html",
     "https://inosmi.ru/science/20210817/250323544.html",
+    "https://inosmi.ru/economic/20210812/250298533.html",
+    "https://inosmi.ru/science/20210809/250273593.html",
+    "https://testinosmi.zedchi.repl.co",
 ]
 
 
@@ -91,7 +95,7 @@ async def process_article(
 
 def get_words_from_file(path):
     with open(path, "r", encoding="utf-8") as file:
-        return file.read().split("\n")
+        return file.read().splitlines()
 
 
 async def fetch(session, url):
@@ -101,11 +105,12 @@ async def fetch(session, url):
 
 
 async def main(urls=None):
+    start_time = monotonic()
     morph = pymorphy2.MorphAnalyzer()
     positive_words = get_words_from_file(POSITIVE_WORDS_PATH)
     negative_words = get_words_from_file(NEGATIVE_WORDS_PATH)
 
-    results = []
+    results:List[Result] = []
 
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:
@@ -119,7 +124,7 @@ async def main(urls=None):
                     negative_words,
                     results,
                 )
-
+    end_time = monotonic()
     for result in results:
         print(f"Address {result.address}")
         print(f"\tstatus {result.status}")
@@ -127,6 +132,7 @@ async def main(urls=None):
         print(f"\t+rate {result.pos_rate}")
         print(f"\t-rate {result.neg_rate}")
         print(f"\ttime {result.time}")
+    print(f"{round(end_time-start_time, 2)} sec")
 
 
 async def get_articles_results(urls=None, process_timeout=DEFAULT_PROCESS_TIME):
