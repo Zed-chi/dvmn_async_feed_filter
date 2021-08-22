@@ -3,7 +3,8 @@ from typing import List
 import pymorphy2
 from aiohttp import web
 
-from article_analyzer import Result, get_articles_results, load_words_from_file
+from article_analyzer import Result, get_articles_results
+from text_tools import load_words_from_file
 from config import DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH
 
 routes = web.RouteTableDef()

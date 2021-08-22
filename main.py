@@ -3,9 +3,10 @@ from time import monotonic
 import pymorphy2
 from anyio import run
 
-from article_analyzer import get_articles_results, load_words_from_file
+from article_analyzer import get_articles_results
 from config import (DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH,
                     TEST_ARTICLES)
+from text_tools import load_words_from_file
 
 
 async def main(urls):
