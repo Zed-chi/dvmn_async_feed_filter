@@ -1,7 +1,8 @@
+from typing import List
 import pytest
 from aiohttp import web
 
-from main import get_articles_results
+from main import Result, get_articles_results
 
 TIMEOUT = 8
 routes = web.RouteTableDef()
@@ -19,22 +20,11 @@ async def process_articles(request):
             {"error": "too many urls in request, should be 10 or less"}
         )
 
-    results = await get_articles_results(urls, process_timeout=TIMEOUT)
+    results:List[Result] = await get_articles_results(urls, process_timeout=TIMEOUT)
     result_dict = {
-        "results": [result_to_dict(result) for result in results],
+        "results": [result.__dict__ for result in results],
     }
     return web.json_response(result_dict)
-
-
-def result_to_dict(result):
-    return {
-        "address": result.address,
-        "words_count": result.words_count,
-        "pos_rate": result.pos_rate,
-        "neg_rate": result.neg_rate,
-        "status": result.status,
-        "time": result.time,
-    }
 
 
 @pytest.fixture
