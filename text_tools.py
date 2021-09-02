@@ -8,24 +8,13 @@ def load_words_from_file(filepath):
 
 
 async def _clean_word(word):
-    for char in [
-        "«",
-        "»",
-        ".",
-        ",",
-        " - ",
-        "!",
-        "?",
-        "(",
-        ")",
-        "[",
-        "]",
-        '"',
-        "'",
-        ":",
-        ";",
-        "...",
-    ]:
+    chars_to_clean = [
+        "«","»", ".",",",
+        " - ","!","?","(",
+        ")","[","]",'"',"'",
+        ":",";","...",
+    ]
+    for char in chars_to_clean:
         word = word.replace(char, "")
         await asyncio.sleep(0)
     word = word.strip(string.punctuation)
