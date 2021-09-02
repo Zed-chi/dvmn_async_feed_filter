@@ -49,14 +49,10 @@ python3 server.py
 Для тестирования используется [pytest](https://docs.pytest.org/en/latest/), тестами покрыты фрагменты кода сложные в отладке: text_tools.py и адаптеры. Команды для запуска тестов:
 
 ```
-python -m pytest adapters/inosmi_ru.py
-```
-
-```
+python -m pytest tests/article_analyzer.py
 python -m pytest tests/text_tools.py
-```
-```
 python -m pytest tests/server.py
+python -m pytest tests/adapters/inosmi_ru.py
 ```
 
 
