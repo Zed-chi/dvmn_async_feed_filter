@@ -2,10 +2,9 @@ from typing import List
 
 import pymorphy2
 from aiohttp import web
-
 from article_analyzer import Result, get_articles_results
-from text_tools import load_words_from_file
 from config import DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH
+from text_tools import load_words_from_file
 
 routes = web.RouteTableDef()
 MORPH = pymorphy2.MorphAnalyzer()
@@ -22,11 +21,11 @@ async def process_articles(request):
     urls = urls_parameter.split(",")
     if len(urls) > 10:
         return web.json_response(
-            {"error": "too many urls in request, should be 10 or less"}
+            {"error": "too many urls in request, should be 10 or less"},
         )
 
     results: List[Result] = await get_articles_results(
-        MORPH, POSITIVE_WORDS, NEGATIVE_WORDS, urls, DEFAULT_TIMEOUT
+        MORPH, POSITIVE_WORDS, NEGATIVE_WORDS, urls, DEFAULT_TIMEOUT,
     )
     result_dict = {
         "results": [result.__dict__ for result in results],

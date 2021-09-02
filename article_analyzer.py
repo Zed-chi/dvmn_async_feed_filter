@@ -2,13 +2,12 @@ import asyncio
 from dataclasses import dataclass
 from enum import Enum
 from time import monotonic
-from typing import List
+from typing import List, Union
 
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError, ClientResponseError
 from anyio import create_task_group
 from async_timeout import timeout
-
 from adapters import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import calculate_jaundice_rate, split_by_words
@@ -46,7 +45,7 @@ async def process_article(
     session=None,
     url=None,
     text=None,
-):
+) -> Union[Result, List[Result]]:
     words_count = 0
     positive_rate = None
     negative_rate = None
@@ -62,10 +61,10 @@ async def process_article(
 
             words = await split_by_words(morph, text)
             positive_rate = await calculate_jaundice_rate(
-                words, positive_words
+                words, positive_words,
             )
             negative_rate = await calculate_jaundice_rate(
-                words, negative_words
+                words, negative_words,
             )
             words_count = len(words)
             status = ProcessingStatus.OK.value
@@ -93,7 +92,7 @@ async def process_article(
 
 
 async def get_articles_results(
-    morph, positive_words, negative_words, urls, process_timeout
+    morph, positive_words, negative_words, urls, process_timeout,
 ):
     results: List[Result] = []
 

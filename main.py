@@ -2,7 +2,6 @@ from time import monotonic
 
 import pymorphy2
 from anyio import run
-
 from article_analyzer import get_articles_results
 from config import (DEFAULT_TIMEOUT, NEGATIVE_WORDS_PATH, POSITIVE_WORDS_PATH,
                     TEST_ARTICLES)
@@ -16,10 +15,11 @@ async def main(urls):
     negative_words = load_words_from_file(NEGATIVE_WORDS_PATH)
 
     results = await get_articles_results(
-        morph, positive_words, negative_words, urls, DEFAULT_TIMEOUT
+        morph, positive_words, negative_words, urls, DEFAULT_TIMEOUT,
     )
 
     end_time = monotonic()
+    print(results)
     for result in results:
         print(f"Address {result.address}")
         print(f"\tstatus {result.status}")
