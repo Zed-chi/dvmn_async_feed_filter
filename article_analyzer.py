@@ -55,7 +55,7 @@ async def process_article(
         async with timeout(process_timeout):
             start_time = monotonic()
 
-            if not text:
+            if text is None:
                 html = await fetch(session, url)
                 text = sanitize(html, True)
 
