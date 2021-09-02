@@ -23,12 +23,12 @@ class ProcessingStatus(Enum):
 
 @dataclass
 class Result:
-    address: str
     words_count: int
     pos_rate: float
     neg_rate: float
     status: str
     time: float = 0.0
+    address: str = "Noname article"
 
 
 async def fetch(session, url):
@@ -38,13 +38,14 @@ async def fetch(session, url):
 
 
 async def process_article(
-    session,
     morph,
-    url,
     positive_words,
     negative_words,
-    results_container,
     process_timeout,
+    results_container=None,
+    session=None,
+    url=None,
+    text=None,
 ):
     words_count = 0
     positive_rate = None
@@ -54,11 +55,18 @@ async def process_article(
     try:
         async with timeout(process_timeout):
             start_time = monotonic()
-            html = await fetch(session, url)
-            text = sanitize(html, True)
-            words = split_by_words(morph, text)
-            positive_rate = calculate_jaundice_rate(words, positive_words)
-            negative_rate = calculate_jaundice_rate(words, negative_words)
+
+            if not text:
+                html = await fetch(session, url)
+                text = sanitize(html, True)
+
+            words = await split_by_words(morph, text)
+            positive_rate = await calculate_jaundice_rate(
+                words, positive_words
+            )
+            negative_rate = await calculate_jaundice_rate(
+                words, negative_words
+            )
             words_count = len(words)
             status = ProcessingStatus.OK.value
             end_time = monotonic()
@@ -71,14 +79,17 @@ async def process_article(
         status = ProcessingStatus.TIMEOUT.value
     finally:
         result = Result(
-            url,
             words_count,
             positive_rate,
             negative_rate,
             status,
             process_time,
+            url,
         )
-        results_container.append(result)
+        if results_container is None:
+            return result
+        else:
+            results_container.append(result)
 
 
 async def get_articles_results(
@@ -91,12 +102,12 @@ async def get_articles_results(
             for url in urls:
                 tg.start_soon(
                     process_article,
-                    session,
                     morph,
-                    url,
                     positive_words,
                     negative_words,
-                    results,
                     process_timeout,
+                    results,
+                    session,
+                    url,
                 )
     return results
